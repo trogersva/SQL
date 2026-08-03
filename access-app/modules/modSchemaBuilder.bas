@@ -64,8 +64,12 @@ Private Function TableExists(ByVal tableName As String) As Boolean
 End Function
 
 ' The DDL below mirrors schema/schema.sql -- keep them in sync.
+' s must be declared dynamic (Dim s() + ReDim) rather than Dim s(0 To 30):
+' VBA refuses to ReDim a fixed-size array ("Array already dimensioned"), and
+' the trailing ReDim Preserve trims it to however many entries were filled.
 Private Function TableDDL() As String()
-    Dim s(0 To 30) As String
+    Dim s() As String
+    ReDim s(0 To 30)
     Dim n As Long
     n = 0
 
@@ -77,10 +81,12 @@ Private Function TableDDL() As String()
         "BOC TEXT(10) NOT NULL, OC TEXT(4), BOCDescription TEXT(100), " & _
         "CONSTRAINT PK_BudgetObjectCodes PRIMARY KEY (BOC))" : n = n + 1
 
-    s(n) = "CREATE TABLE Vendors (" & _
-        "VendorNumber TEXT(20) NOT NULL, VendorName TEXT(150), DefaultBOC TEXT(10), Notes TEXT(255), " & _
-        "CONSTRAINT PK_Vendors PRIMARY KEY (VendorNumber), " & _
-        "CONSTRAINT FK_Vendors_BOC FOREIGN KEY (DefaultBOC) REFERENCES BudgetObjectCodes (BOC))" : n = n + 1
+    ' Old TABLE_Vendors is a BOC -> default vendor-number lookup, not a
+    ' vendor registry -- BOC is the unique key, VendorNumber repeats.
+    s(n) = "CREATE TABLE BOCDefaultVendors (" & _
+        "BOC TEXT(10) NOT NULL, VendorNumber TEXT(20), " & _
+        "CONSTRAINT PK_BOCDefaultVendors PRIMARY KEY (BOC), " & _
+        "CONSTRAINT FK_BOCDefaultVendors_BOC FOREIGN KEY (BOC) REFERENCES BudgetObjectCodes (BOC))" : n = n + 1
 
     s(n) = "CREATE TABLE StatusDescriptions (" & _
         "StatusCode TEXT(40) NOT NULL, Description MEMO, " & _
@@ -153,10 +159,8 @@ Private Function TableDDL() As String()
         "PO TEXT(30), VendorNumber TEXT(20), BOC TEXT(10), CostCenter TEXT(10), " & _
         "ApprovalDate DATETIME, Amount CURRENCY, StatusCode TEXT(40), LastUpdated DATETIME, " & _
         "CONSTRAINT PK_PendingOrders PRIMARY KEY (TransactionNumber, RecordType), " & _
-        "CONSTRAINT FK_PendingOrders_Vendor FOREIGN KEY (VendorNumber) REFERENCES Vendors (VendorNumber), " & _
         "CONSTRAINT FK_PendingOrders_BOC FOREIGN KEY (BOC) REFERENCES BudgetObjectCodes (BOC), " & _
-        "CONSTRAINT FK_PendingOrders_CC FOREIGN KEY (CostCenter) REFERENCES CostCenters (CostCenter), " & _
-        "CONSTRAINT FK_PendingOrders_Status FOREIGN KEY (StatusCode) REFERENCES StatusDescriptions (StatusCode))" : n = n + 1
+        "CONSTRAINT FK_PendingOrders_CC FOREIGN KEY (CostCenter) REFERENCES CostCenters (CostCenter))" : n = n + 1
 
     s(n) = "CREATE TABLE PendingAdjustments (" & _
         "AdjustmentID AUTOINCREMENT, TransactionNumber TEXT(30) NOT NULL, OriginalAmount CURRENCY, " & _

@@ -35,13 +35,16 @@ Form/Report layer still needs to be built by hand in Access — see
    it is safe — it skips tables that already exist.
 5. Import the reference data in `seed/` via **External Data → Text File**
    into the matching table (append mode):
+   Import in this order — `BudgetObjectCodes` must exist before
+   `BOCDefaultVendors`, which has a foreign key to it:
+
    - `CostCenters.csv` → `CostCenters`
    - `BudgetObjectCodes.csv` → `BudgetObjectCodes`
+   - `BOCDefaultVendors.csv` → `BOCDefaultVendors` (this is the old
+     `TABLE_Vendors`, which turned out to be a BOC → default vendor-number
+     lookup rather than a vendor list — see `docs/DESIGN.md`)
    - `StatusDescriptions.csv` → `StatusDescriptions`
    - `CostTransferTypes.csv` → `CostTransferTypes`
-   - `Vendors.csv` → `Vendors` (this one only has `BOC`/`VendorNumber` from
-     the old database — it has no vendor names, since the old table never
-     captured them either. Fill in `VendorName` as you touch each vendor.)
    - `ImportFileTypes.csv` → `ImportFileTypes` (do this one before importing
      F820/F20D/F826 data — `ImportLog` has a foreign key to it, so the first
      import will fail if these rows aren't there yet)

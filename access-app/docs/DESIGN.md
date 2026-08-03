@@ -27,8 +27,18 @@ schema, and *why* each change was made. Read this before importing anything.
    table with a `LogBookCode` column, and every row now has an approval
    field (needed for the new alerts feature — "JV pending approval > N days").
 
-4. **`TABLE_Vendors` had no vendor name** — just `BOC` and `VendorNumber`.
-   Fixed: `Vendors.VendorName` added.
+4. **`TABLE_Vendors` is not a vendor table at all.** My first pass assumed it
+   was a vendor registry missing a name column, and added `VendorName`. Then
+   I actually looked at the 56 rows: `BOC` is unique across all of them, and
+   there are only **7** distinct vendor numbers — 41 of the rows share the
+   literal value `"MISCE"` (miscellaneous). It's a **BOC → default vendor
+   number** lookup, keyed by BOC, not a list of vendors. Renamed to
+   `BOCDefaultVendors(BOC PK, VendorNumber)`. There is no `VendorName` to
+   fill in, because no vendor registry ever existed here.
+
+   Consequence: `PendingOrders.VendorNumber` has **no** foreign key. There is
+   nothing authoritative to point it at, and an FK against those 7 values
+   would reject essentially every real purchase order.
 
 5. **`TABLE_Attachments` stored file blobs inside the database**, which is
    most of why the file was 23 MB for basically no data. Replaced with a
@@ -39,6 +49,20 @@ schema, and *why* each change was made. Read this before importing anything.
    free-text/number columns repeated across tables with nothing enforcing
    they matched a real lookup row. The new schema adds actual FK constraints
    so bad imports fail loudly instead of silently producing orphan data.
+
+   An FK is only added where the referenced table is genuinely the complete,
+   authoritative list. `CostCenters` (2,019 rows) and `BudgetObjectCodes`
+   (492) qualify. Two deliberately do **not** get FKs pointed at them:
+   `BOCDefaultVendors` (not a vendor registry — see #4) and
+   `StatusDescriptions` (its keys are truncated at 33 characters in the
+   inherited data, e.g. `"Ordered (No Fiscal Action Require"`, so real
+   status text would never match). Both remain useful for display lookups;
+   they're just not constraints.
+
+   `StatusDescriptions` also contained one duplicate key
+   (`"Partial Payment (Partial Receipt)"`, two rows whose descriptions
+   differed only in whitespace), which would have failed the new primary
+   key outright. The seed CSV keeps one of them.
 
 7. **Access/permission tables scattered across three tables**
    (`TABLE_FCP_DOAs`, `TABLE_IFCAP_Users`, `TABLE_FCP_SpecialAccess`) that are

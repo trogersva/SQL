@@ -163,6 +163,10 @@ NextLine:
            rowsBad & " rejected. See ImportRejects (ImportID=" & importID & ") for details.", vbInformation
 End Sub
 
+' Date guards below use IsDate(), not Not IsNull(): an un-set Variant is
+' Empty rather than Null, and IsNull(Empty) is False -- so an IsNull guard
+' would let Empty through into a DateTime field for any block parsed before
+' the report's Run Date header was seen.
 Private Sub InsertSnapshot(db As DAO.Database, ByVal fileType As String, ByVal importID As Long, _
     ByVal station As String, ByVal bfys As String, ByVal ao As String, ByVal fundCode As String, _
     ByVal classCode As String, ByVal classCodeName As String, ByVal prog As String, _
@@ -184,8 +188,8 @@ Private Sub InsertSnapshot(db As DAO.Database, ByVal fileType As String, ByVal i
     If Len(balanceType) > 0 Then rs!BalanceType = balanceType
     rs!AmountType = amountType
     rs!Amount = amount
-    If Not IsNull(runDate) Then rs!RunDate = runDate
-    If Not IsNull(asOfDate) Then rs!AsOfDate = asOfDate
+    If IsDate(runDate) Then rs!RunDate = runDate
+    If IsDate(asOfDate) Then rs!AsOfDate = asOfDate
     rs.Update
     rs.Close
 End Sub
@@ -208,14 +212,14 @@ Private Sub InsertTransaction(db As DAO.Database, ByVal fileType As String, ByVa
     rs!ClassCode = classCode
     rs!ClassCodeName = classCodeName
     rs!docID = docID
-    If Not IsNull(transDate) Then rs!TransDate = transDate
+    If IsDate(transDate) Then rs!TransDate = transDate
     rs!Vendor = vendor
     rs!boc = boc
     rs!SubBOC = subBoc
     rs!CostCenter = cc
     rs!CeilingAdjAmount = ceilingAdj
     rs!ObligationAdjAmount = oblAdj
-    If Not IsNull(runDate) Then rs!RunDate = runDate
+    If IsDate(runDate) Then rs!RunDate = runDate
     rs.Update
     rs.Close
 End Sub

@@ -1,55 +1,54 @@
-Status,Description
-"Order Not Completely Prepared","The Purchasing Agent has assigned a Purchase Order number to it, but has not electronically signed it yet. "
-"Ordered (No Fiscal Action Require","This status means that Fiscal processing of the order is not required."
-"Ordered (No Fiscal Action) - Amen","Order did not require action by Fiscal but the original order has been changed.  "
-"Ordered and Obligated","Order has been placed with Vendor and obligated by Fiscal or Purchaser."
-"Ordered and Obligated (Amended)","Order has been placed with Vendor and obligated by Fiscal or Purchaser but the Purchaser  made a change to the Purchase Order."
-"Paid (Complete Order Received)","A purchase card order that has been paid in full and the entire order has been received. Corrective action will be needed."
-"Paid (Complete Order Received) - ","A purchase card order that has been paid in full and the entire order has been received but the original order has been changed. Corrective action will be needed. "
-"Paid - Not Received","A purchase card order that has been paid in full but the shipment  has not been received."
-"Paid - Not Received - Amended","A purchase card order that has been paid in full but the order has not been received and the original order has been changed."
-"Paid (Partial Receipt)","A purchase card order that has been paid in full and a partial shipment has been  received."
-"Paid (Partial Receipt) - Amended","A purchase card order that has been paid in full   and a partial shipment has been  received and the original order has been changed. "
-"Partial Issue Delivered","Issue has been partially filled and delivered by Warehouse."
-"Partial Order Received","Part of the goods have been received by Warehouse or Purchaser."
-"Partial Order Received (Amended)","Part of the goods have been received by Warehouse or Purchaser but the Purchaser has changed the Purchase Order."
-"Partial Payment (Complete Rec)","A purchase card order has been partially paid and the entire order has been received. "
-"Partial Payment (Complete Rec) -A","A purchase card order has been partially paid and the entire order has been received but, the original order has been changed. ."
-"Partial Payment Not Received","A purchase card order has been partially paid   but nothing has been received yet."
-"Partial Payment Not Received - Am","A purchase card order has been partially paid   but nothing has been received yet and the original order has been changed. "
-"Partial Payment (Partial Receipt)","A purchase card order has been partially paid   and partial shipment has been received."
-"Partial Payment (Partial Receipt)","A purchase card order has been partially paid and partial shipment has been received. but the original order has been changed. "
-"Partial Received (No Fiscal Actio","Part of the goods have been received by Warehouse or Purchaser and no fiscal action is required."
-"Partial Received But Not Obligate","Part of the goods have been received by Warehouse or Purchaser but the funds have not been obligated yet."
-"Pending Accountable Officer Sig.","Request has not been signed in PPM."
-"Pending CP Official’s Signature","Request has not been signed by CP Official yet."
-"Pending Completion by CP Clerk","Control Point Official has not marked the transaction as ready for approval by CP Official."
-"Pending Completion by Requestor","The Requestor has not completed the temporary request."
-"Pending Contracting Officers Sign","The Purchasing Agent has not electronically signed the purchase order yet."
-"Pending Fiscal Action","The Accounting Technician has not obligated the order or 1358, or processed the General Post Fund (GPF) transaction. "
-"Pending PPM Clerk Signature","The PPM Clerk has not electronically signed the requisition yet. "
-"Reconciled","The Purchase card order has been paid in full and the complete order has been received."
-"Reconciled – Amended","The Purchase card order has been paid in full and completely received and the original order has been changed.."
-"Request Clarification by Service ","The Purchasing Agent is waiting for information from the CP Official or Clerk before completing the order. "
-"Returned to Service by P&C","The 2237 request has been returned to the Service by the Purchasing Agent. "
-"Returned to Service by Fiscal","The 1358 transaction or GPF transaction was returned to the Service by the Accounting Technician.  "
-"Returned to Service by PPM","The 2237 was returned to the Service by the PPM clerk. "
-"Returned to Supply (Pending Signa","The order or requisition was returned to the A&MM section by the Accounting Technician.  "
-"Sent to Purchasing and Contractin","The Accountable Officer has passed the 2237 to the Purchasing and Contracting section for placement of the order. "
-"Sent to eCMS (P&C)","The Accountable Officer has passed the 2237 to the Electronic Contracting Management System (eCMS) for placement of the order."
-"Transaction Complete","All necessary processing has been completed on the order. (i.e. ordered, obligated, received)  A 1358 or Certified Type purchase order will move to this status as soon as it is obligated.  "
-"Transaction Complete (Amended)","All necessary processing has been completed on the order. (i.e. ordered, obligated, received)  A 1358 or Certified Type purchase order will move to this status as soon as it is obligated. Unlike ""Transaction Complete"", the  Purchaser has made a chang to t"
-"Assigned to PPM Clerk","PPM Clerk will create a requisition or purchase card order from a Government Vendor "
-"Assigned to Purchasing Agent","Purchase Order will be placed"
-"Cancelled - 1358","Cancelled request.  Contact control point clerk or Accounting Technician for explanation. "
-"Cancelled Order","Cancelled order.  Contact control point clerk or purchaser for information."
-"Complete Order Received","Entire order was received.  "
-"Complete Order Received (Amended)","Entire order was received but the Purchaser made a change to the Purchase Order."
-"Complete Order Received But Not O","Entire order has been received by order has not been obligated.  Contact Fiscal or Purchaser for information."
-"Forward to Imprest Funds Agent","Purchaser will create order for payment by cash/check/draft."
-"Held for Review in Personal Prop.","Accountable Office is holding the 2237 for review.   "
-"Held in P&C Pending Return of Quo","Purchasing Agent is awaiting quote(s) from Vendor(s)."
-"Issue Pending Delivery From Wareh","Request is being filled in the Warehouse."
-"Issue Request Pending Fiscal Acti","This status is not used.  Currently, Fiscal Service does not process issue book orders."
-"Obligated - 1358","Fiscal has processed the 1358 transaction."
-"Obligated - Awaiting Invoice","Fiscal is awaiting certification of Invoice to make payment to Vendor"
+StatusCode,Description
+Assigned to PPM Clerk,PPM Clerk will create a requisition or purchase card order from a Government Vendor
+Assigned to Purchasing Agent,Purchase Order will be placed
+Cancelled - 1358,Cancelled request.  Contact control point clerk or Accounting Technician for explanation.
+Cancelled Order,Cancelled order.  Contact control point clerk or purchaser for information.
+Complete Order Received,Entire order was received.
+Complete Order Received (Amended),Entire order was received but the Purchaser made a change to the Purchase Order.
+Complete Order Received But Not O,Entire order has been received by order has not been obligated.  Contact Fiscal or Purchaser for information.
+Forward to Imprest Funds Agent,Purchaser will create order for payment by cash/check/draft.
+Held for Review in Personal Prop.,Accountable Office is holding the 2237 for review.
+Held in P&C Pending Return of Quo,Purchasing Agent is awaiting quote(s) from Vendor(s).
+Issue Pending Delivery From Wareh,Request is being filled in the Warehouse.
+Issue Request Pending Fiscal Acti,"This status is not used.  Currently, Fiscal Service does not process issue book orders."
+Obligated - 1358,Fiscal has processed the 1358 transaction.
+Obligated - Awaiting Invoice,Fiscal is awaiting certification of Invoice to make payment to Vendor
+Order Not Completely Prepared,"The Purchasing Agent has assigned a Purchase Order number to it, but has not electronically signed it yet."
+Ordered (No Fiscal Action Require,This status means that Fiscal processing of the order is not required.
+Ordered (No Fiscal Action) - Amen,Order did not require action by Fiscal but the original order has been changed.
+Ordered and Obligated,Order has been placed with Vendor and obligated by Fiscal or Purchaser.
+Ordered and Obligated (Amended),Order has been placed with Vendor and obligated by Fiscal or Purchaser but the Purchaser  made a change to the Purchase Order.
+Paid (Complete Order Received),A purchase card order that has been paid in full and the entire order has been received. Corrective action will be needed.
+Paid (Complete Order Received) -,A purchase card order that has been paid in full and the entire order has been received but the original order has been changed. Corrective action will be needed.
+Paid (Partial Receipt),A purchase card order that has been paid in full and a partial shipment has been  received.
+Paid (Partial Receipt) - Amended,A purchase card order that has been paid in full   and a partial shipment has been  received and the original order has been changed.
+Paid - Not Received,A purchase card order that has been paid in full but the shipment  has not been received.
+Paid - Not Received - Amended,A purchase card order that has been paid in full but the order has not been received and the original order has been changed.
+Partial Issue Delivered,Issue has been partially filled and delivered by Warehouse.
+Partial Order Received,Part of the goods have been received by Warehouse or Purchaser.
+Partial Order Received (Amended),Part of the goods have been received by Warehouse or Purchaser but the Purchaser has changed the Purchase Order.
+Partial Payment (Complete Rec),A purchase card order has been partially paid and the entire order has been received.
+Partial Payment (Complete Rec) -A,"A purchase card order has been partially paid and the entire order has been received but, the original order has been changed. ."
+Partial Payment (Partial Receipt),A purchase card order has been partially paid   and partial shipment has been received.
+Partial Payment Not Received,A purchase card order has been partially paid   but nothing has been received yet.
+Partial Payment Not Received - Am,A purchase card order has been partially paid   but nothing has been received yet and the original order has been changed.
+Partial Received (No Fiscal Actio,Part of the goods have been received by Warehouse or Purchaser and no fiscal action is required.
+Partial Received But Not Obligate,Part of the goods have been received by Warehouse or Purchaser but the funds have not been obligated yet.
+Pending Accountable Officer Sig.,Request has not been signed in PPM.
+Pending CP Official’s Signature,Request has not been signed by CP Official yet.
+Pending Completion by CP Clerk,Control Point Official has not marked the transaction as ready for approval by CP Official.
+Pending Completion by Requestor,The Requestor has not completed the temporary request.
+Pending Contracting Officers Sign,The Purchasing Agent has not electronically signed the purchase order yet.
+Pending Fiscal Action,"The Accounting Technician has not obligated the order or 1358, or processed the General Post Fund (GPF) transaction."
+Pending PPM Clerk Signature,The PPM Clerk has not electronically signed the requisition yet.
+Reconciled,The Purchase card order has been paid in full and the complete order has been received.
+Reconciled – Amended,The Purchase card order has been paid in full and completely received and the original order has been changed..
+Request Clarification by Service,The Purchasing Agent is waiting for information from the CP Official or Clerk before completing the order.
+Returned to Service by Fiscal,The 1358 transaction or GPF transaction was returned to the Service by the Accounting Technician.
+Returned to Service by P&C,The 2237 request has been returned to the Service by the Purchasing Agent.
+Returned to Service by PPM,The 2237 was returned to the Service by the PPM clerk.
+Returned to Supply (Pending Signa,The order or requisition was returned to the A&MM section by the Accounting Technician.
+Sent to Purchasing and Contractin,The Accountable Officer has passed the 2237 to the Purchasing and Contracting section for placement of the order.
+Sent to eCMS (P&C),The Accountable Officer has passed the 2237 to the Electronic Contracting Management System (eCMS) for placement of the order.
+Transaction Complete,"All necessary processing has been completed on the order. (i.e. ordered, obligated, received)  A 1358 or Certified Type purchase order will move to this status as soon as it is obligated."
+Transaction Complete (Amended),"All necessary processing has been completed on the order. (i.e. ordered, obligated, received)  A 1358 or Certified Type purchase order will move to this status as soon as it is obligated. Unlike ""Transaction Complete"", the  Purchaser has made a chang to t"

@@ -21,15 +21,20 @@ CREATE TABLE BudgetObjectCodes (
     CONSTRAINT PK_BudgetObjectCodes PRIMARY KEY (BOC)
 );
 
-CREATE TABLE Vendors (
-    VendorNumber   TEXT(20) NOT NULL,
-    VendorName     TEXT(150),
-    DefaultBOC     TEXT(10),
-    Notes          TEXT(255),
-    CONSTRAINT PK_Vendors PRIMARY KEY (VendorNumber),
-    CONSTRAINT FK_Vendors_BOC FOREIGN KEY (DefaultBOC) REFERENCES BudgetObjectCodes (BOC)
+-- The old TABLE_Vendors was NOT a vendor registry -- it's a BOC -> default
+-- vendor-number lookup (56 rows, BOC unique, only 7 distinct vendor numbers,
+-- 41 of them the literal "MISCE"). Named and keyed accordingly.
+CREATE TABLE BOCDefaultVendors (
+    BOC            TEXT(10) NOT NULL,
+    VendorNumber   TEXT(20),
+    CONSTRAINT PK_BOCDefaultVendors PRIMARY KEY (BOC),
+    CONSTRAINT FK_BOCDefaultVendors_BOC FOREIGN KEY (BOC) REFERENCES BudgetObjectCodes (BOC)
 );
 
+-- NOTE: StatusCode values inherited from the old database are truncated at
+-- 33 characters ("Ordered (No Fiscal Action Require"). This is a lookup for
+-- display, deliberately NOT an FK target -- a real IFCAP export's full
+-- status text would not match these truncated keys.
 CREATE TABLE StatusDescriptions (
     StatusCode    TEXT(40) NOT NULL,
     Description   MEMO,
@@ -197,10 +202,11 @@ CREATE TABLE PendingOrders (
     StatusCode          TEXT(40),
     LastUpdated         DATETIME,
     CONSTRAINT PK_PendingOrders PRIMARY KEY (TransactionNumber, RecordType),
-    CONSTRAINT FK_PendingOrders_Vendor FOREIGN KEY (VendorNumber) REFERENCES Vendors (VendorNumber),
     CONSTRAINT FK_PendingOrders_BOC FOREIGN KEY (BOC) REFERENCES BudgetObjectCodes (BOC),
-    CONSTRAINT FK_PendingOrders_CC FOREIGN KEY (CostCenter) REFERENCES CostCenters (CostCenter),
-    CONSTRAINT FK_PendingOrders_Status FOREIGN KEY (StatusCode) REFERENCES StatusDescriptions (StatusCode)
+    CONSTRAINT FK_PendingOrders_CC FOREIGN KEY (CostCenter) REFERENCES CostCenters (CostCenter)
+    -- No FK on VendorNumber: there is no authoritative vendor registry to
+    -- point at (see BOCDefaultVendors above). No FK on StatusCode either,
+    -- since the inherited status values are truncated.
 );
 
 CREATE TABLE PendingAdjustments (
