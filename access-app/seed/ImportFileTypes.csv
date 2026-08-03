@@ -1,5 +1,5 @@
-FileType,DisplayName,Delimiter,TargetTable,StaleAfterDays
-F820,Monthly Activity by Account Classification Code,,ReportParser,35
-F20D,Daily Activity by Account Classification Code,,ReportParser,3
-F826,Status of Allowance,,ReportParser,35
-Pending,IFCAP Pending Orders,",",PendingOrders,7
+"FileType","DisplayName","Delimiter","TargetTable","StaleAfterDays"
+"F820","Monthly Activity by Account Classification Code","","ReportParser","35"
+"F20D","Daily Activity by Account Classification Code","","ReportParser","3"
+"F826","Status of Allowance","","ReportParser","35"
+"Pending","IFCAP Pending Orders",",","PendingOrders","7"

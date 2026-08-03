@@ -1,11 +1,11 @@
-TransferTypeCode,TransInitials,TransType,ExpRevGLBG,LogBookCode
-EW-GIP,EW,01,E,EWGIP
-EB to Suspense,EB,01,E,EB
-EB-01,EB,01,E,EB
-EW-01 Normal,EW,01,E,EW
-EW-01 to Suspense,EW,01,E,EW
-EW-56,EW,56,E,EW
-EB-GIP,EB,01,E,EBGIP
-CC Accrual,SV,CC,E,
-EB-56,EB,56,E,EB
-EB-03,EB,03,G,EB
+"TransferTypeCode","TransInitials","TransType","ExpRevGLBG","LogBookCode"
+"EW-GIP","EW","01","E","EWGIP"
+"EB to Suspense","EB","01","E","EB"
+"EB-01","EB","01","E","EB"
+"EW-01 Normal","EW","01","E","EW"
+"EW-01 to Suspense","EW","01","E","EW"
+"EW-56","EW","56","E","EW"
+"EB-GIP","EB","01","E","EBGIP"
+"CC Accrual","SV","CC","E",""
+"EB-56","EB","56","E","EB"
+"EB-03","EB","03","G","EB"

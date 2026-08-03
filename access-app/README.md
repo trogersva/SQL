@@ -34,7 +34,32 @@ Form/Report layer still needs to be built by hand in Access — see
    alert/report queries (`modSchemaBuilder.CreateSavedQueries`). Re-running
    it is safe — it skips tables that already exist.
 5. Import the reference data in `seed/` via **External Data → Text File**
-   into the matching table (append mode):
+   into the matching table (append mode).
+
+   **Wizard settings — the same for every file. Getting these wrong is the
+   most likely thing to go visibly sideways:**
+
+   | Wizard page | Setting |
+   |---|---|
+   | first page | **Append a copy of the records to the table:** *(pick the target table)* — not "Import into a new table" |
+   | format | **Delimited** |
+   | delimiter | **Comma** |
+   | **Text Qualifier** | **`"`** ← must NOT be `{none}` |
+   | | ☑ **First Row Contains Field Names** |
+
+   Every field in every seed file is wrapped in double quotes, and those
+   quotes are structural CSV syntax, not data. With Text Qualifier set to
+   `"`, Access strips them. With it set to `{none}`, the quotes get stored
+   as literal characters and you'll see `"120000"` sitting in the table —
+   if you see that, this setting is why. Delete the imported rows, redo the
+   import with the qualifier set, and they'll come in clean.
+
+   The qualifier is genuinely required, not just cosmetic: several fields
+   contain commas inside the value (cost-center and BOC descriptions, status
+   descriptions), and in `ImportFileTypes.csv` the `Pending` row's
+   `Delimiter` value *is* a literal comma. Without a qualifier those rows
+   split into the wrong number of columns and the import fails or corrupts.
+
    Import in this order — `BudgetObjectCodes` must exist before
    `BOCDefaultVendors`, which has a foreign key to it:
 
