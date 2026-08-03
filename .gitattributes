@@ -1,0 +1,14 @@
+# Keep line endings deterministic so files don't show up as wholly rewritten
+# just because they were checked out on a different platform. Without this, a
+# Windows checkout with core.autocrlf enabled rewrites every line of these
+# files, which turns any local edit into an unmergeable whole-file conflict.
+#
+# Stored LF in the repository, checked out CRLF in the working tree -- the
+# seed CSVs and VBA modules are consumed on Windows by Access.
+*.csv   text eol=crlf
+*.bas   text eol=crlf
+
+# Binary / byte-exact: never touch these.
+*.accdb binary
+*.mdb   binary
+"Sample Files/*.txt" -text
