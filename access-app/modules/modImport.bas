@@ -2,22 +2,29 @@ Attribute VB_Name = "modImport"
 Option Compare Database
 Option Explicit
 
-' Generic, table-driven import engine for VistA/FileMan text exports.
+' Generic, table-driven import engine for simple DELIMITED text exports
+' (one row per data line, fixed column count). This does NOT handle F820,
+' F20D, or F826 -- those are fixed-width printed reports with page headers
+' and multi-line blocks, not delimited data. See modImportReports.bas for
+' those. This engine is for a genuinely flat/delimited feed (e.g. if you
+' get a comma- or caret-separated pending-orders export from IFCAP).
 '
 ' Setup once per file type (in ImportFileTypes / ImportFieldMap -- see
 ' seed/ImportFileTypes.csv and seed/ImportFieldMap.csv for a starting point):
-'   - ImportFileTypes: one row per report (F820, F826, AACS, UnpaidPC, ...)
-'     naming its delimiter, target table, and staleness threshold.
-'   - ImportFieldMap: one row per column position in the source file.
-'     TargetField is either a plain column name on the target table
-'     (FCPNo, FY, Fund, DocID, VendorNumber, BOC, CostCenter, SnapshotDate...)
-'     or, for FiscalSnapshots only, "Amount:<AmountType>" (e.g. "Amount:Ceiling")
-'     which fans that one source column out into its own snapshot row --
-'     this is how one F826 line with several dollar columns becomes several
-'     FiscalSnapshots rows, one per AmountType. See DESIGN.md.
+'   - ImportFileTypes: one row per feed, naming its delimiter and staleness
+'     threshold. TargetTable must be 'PendingOrders'.
+'   - ImportFieldMap: one row per column position in the source file,
+'     TargetField naming a PendingOrders column (TransactionNumber, FCPNo,
+'     PO, VendorNumber, ApprovalDate, Amount, StatusCode, ...).
 '
 ' Usage from the Immediate Window or a button:
-'   ImportFile "F826", "C:\Exports\f826_2026q3.txt"
+'   ImportFile "Pending", "C:\Exports\pending.txt"
+'
+' NOTE: this is an unverified starting point -- I don't have a real sample
+' of a delimited pending-orders export to confirm layout against. If IFCAP
+' actually hands you the same kind of fixed-width printed report as F820/
+' F826/F20D instead, tell me and I'll write a dedicated parser for it in
+' modImportReports.bas the same way, rather than forcing it through here.
 
 Public Sub ImportFile(ByVal fileType As String, ByVal filePath As String)
     Dim db As DAO.Database
@@ -36,6 +43,12 @@ Public Sub ImportFile(ByVal fileType As String, ByVal filePath As String)
     delimiter = Nz(cfg!delimiter, ",")
     targetTable = Nz(cfg!TargetTable, "")
     cfg.Close
+
+    If targetTable <> "PendingOrders" Then
+        MsgBox "modImport only supports TargetTable = 'PendingOrders'. " & _
+               "F820/F20D/F826 go through modImportReports instead.", vbExclamation
+        Exit Sub
+    End If
 
     Dim fieldMap As DAO.Recordset
     Set fieldMap = db.OpenRecordset( _
@@ -63,7 +76,7 @@ Public Sub ImportFile(ByVal fileType As String, ByVal filePath As String)
     fieldMap.Close
 
     Dim importID As Long
-    importID = StartImportLog(fileType, filePath)
+    importID = modImportCore.StartImportLog(fileType, filePath)
 
     Dim rowsOK As Long, rowsBad As Long
     rowsOK = 0: rowsBad = 0
@@ -84,13 +97,7 @@ Public Sub ImportFile(ByVal fileType As String, ByVal filePath As String)
                     (UBound(parts) - LBound(parts) + 1)
             End If
 
-            If targetTable = "FiscalSnapshots" Then
-                InsertSnapshotRow db, fileType, importID, parts, colTargets, colTypes
-            ElseIf targetTable = "PendingOrders" Then
-                UpsertPendingOrderRow db, fileType, parts, colTargets, colTypes
-            Else
-                Err.Raise vbObjectError + 2, , "Unknown TargetTable: " & targetTable
-            End If
+            UpsertPendingOrderRow db, fileType, parts, colTargets, colTypes
 
             rowsOK = rowsOK + 1
             On Error GoTo 0
@@ -99,108 +106,17 @@ Public Sub ImportFile(ByVal fileType As String, ByVal filePath As String)
 
 LineFailed:
         rowsBad = rowsBad + 1
-        LogReject importID, lineNo, lineText, Err.Description
+        modImportCore.LogReject importID, lineNo, lineText, Err.Description
         Resume NextLine
 NextLine:
     Loop
     Close #fnum
 
-    FinishImportLog importID, rowsOK, rowsBad
+    modImportCore.FinishImportLog importID, rowsOK, rowsBad
 
     MsgBox "Import of '" & fileType & "' done: " & rowsOK & " rows loaded, " & _
            rowsBad & " rejected. See ImportRejects (ImportID=" & importID & ") for details.", _
            vbInformation
-End Sub
-
-Private Function StartImportLog(ByVal fileType As String, ByVal filePath As String) As Long
-    Dim rs As DAO.Recordset
-    Set rs = CurrentDb.OpenRecordset("ImportLog")
-    rs.AddNew
-    rs!fileType = fileType
-    rs!filePath = filePath
-    rs!RowsImported = 0
-    rs!RowsRejected = 0
-    rs!ImportedAt = Now()
-    rs!ImportedBy = Environ$("USERNAME")
-    rs.Update
-    rs.Bookmark = rs.LastModified
-    StartImportLog = rs!ImportID
-    rs.Close
-End Function
-
-Private Sub FinishImportLog(ByVal importID As Long, ByVal rowsOK As Long, ByVal rowsBad As Long)
-    Dim rs As DAO.Recordset
-    Set rs = CurrentDb.OpenRecordset("SELECT * FROM ImportLog WHERE ImportID = " & importID)
-    If Not rs.EOF Then
-        rs.Edit
-        rs!RowsImported = rowsOK
-        rs!RowsRejected = rowsBad
-        rs.Update
-    End If
-    rs.Close
-End Sub
-
-Private Sub LogReject(ByVal importID As Long, ByVal lineNo As Long, ByVal rawLine As String, ByVal msg As String)
-    Dim rs As DAO.Recordset
-    Set rs = CurrentDb.OpenRecordset("ImportRejects")
-    rs.AddNew
-    rs!importID = importID
-    rs!LineNumber = lineNo
-    rs!RawLine = rawLine
-    rs!ErrorMessage = Left(msg, 255)
-    rs.Update
-    rs.Close
-End Sub
-
-' Fans one source line out into one FiscalSnapshots row per "Amount:<Type>"
-' column, sharing the plain dimension columns (FCPNo, FY, Fund, ...).
-Private Sub InsertSnapshotRow(db As DAO.Database, ByVal fileType As String, ByVal importID As Long, _
-    parts() As String, colTargets() As String, colTypes() As String)
-
-    Dim dims As Object
-    Set dims = CreateObject("Scripting.Dictionary")
-    Dim amounts As Object
-    Set amounts = CreateObject("Scripting.Dictionary")
-
-    Dim i As Long
-    For i = 1 To UBound(colTargets)
-        Dim target As String
-        target = colTargets(i)
-        If Left(target, 7) = "Amount:" Then
-            amounts.Add Mid(target, 8), ConvertValue(parts(i - 1), colTypes(i))
-        Else
-            dims.Add target, ConvertValue(parts(i - 1), colTypes(i))
-        End If
-    Next i
-
-    If amounts.Count = 0 Then
-        Err.Raise vbObjectError + 3, , "No Amount:<Type> column mapped for " & fileType
-    End If
-
-    Dim amtType As Variant
-    For Each amtType In amounts.Keys
-        Dim rs As DAO.Recordset
-        Set rs = db.OpenRecordset("FiscalSnapshots")
-        rs.AddNew
-        rs!fileType = fileType
-        rs!importID = importID
-        rs!AmountType = amtType
-        rs!Amount = amounts(amtType)
-        If dims.Exists("FCPNo") Then rs!FCPNo = dims("FCPNo")
-        If dims.Exists("FY") Then rs!FY = dims("FY")
-        If dims.Exists("Fund") Then rs!Fund = dims("Fund")
-        If dims.Exists("DocID") Then rs!DocID = dims("DocID")
-        If dims.Exists("VendorNumber") Then rs!VendorNumber = dims("VendorNumber")
-        If dims.Exists("BOC") Then rs!BOC = dims("BOC")
-        If dims.Exists("CostCenter") Then rs!CostCenter = dims("CostCenter")
-        If dims.Exists("SnapshotDate") Then
-            rs!SnapshotDate = dims("SnapshotDate")
-        Else
-            rs!SnapshotDate = Now()
-        End If
-        rs.Update
-        rs.Close
-    Next amtType
 End Sub
 
 Private Sub UpsertPendingOrderRow(db As DAO.Database, ByVal fileType As String, parts() As String, colTargets() As String, colTypes() As String)

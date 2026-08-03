@@ -2,10 +2,10 @@
 
 A redesigned replacement for `Budget Database 25.05_04.accdb`. Same tool
 (VA fund-control-point budget tracking, purchase-card order tracking,
-journal voucher logbook, VistA/FileMan data pulls), rebuilt as a normalized
-schema plus VBA automation for imports, alerts, and reports, with everything
-kept as text so it's actually version-controllable. See `docs/DESIGN.md` for
-what changed and why.
+journal voucher logbook, F820/F20D/F826 VA FMS report imports), rebuilt as a
+normalized schema plus VBA automation for imports, alerts, and reports, with
+everything kept as text so it's actually version-controllable. See
+`docs/DESIGN.md` for what changed and why.
 
 This was built without access to MS Access itself (dev environment is
 Linux), so the schema and VBA logic are ready to go, but the visual
@@ -18,7 +18,9 @@ Form/Report layer still needs to be built by hand in Access — see
 2. Open the VBA editor (Alt+F11). For each file in `modules/`, right-click
    the project → **Import File...** and import it:
    - `modSchemaBuilder.bas`
+   - `modImportCore.bas`
    - `modImport.bas`
+   - `modImportReports.bas`
    - `modAlerts.bas`
    - `modJVLogbook.bas`
    - `modReports.bas`
@@ -40,26 +42,45 @@ Form/Report layer still needs to be built by hand in Access — see
    - `Vendors.csv` → `Vendors` (this one only has `BOC`/`VendorNumber` from
      the old database — it has no vendor names, since the old table never
      captured them either. Fill in `VendorName` as you touch each vendor.)
-   - `ImportFileTypes.csv` → `ImportFileTypes`
-   - `ImportFieldMap.csv` → `ImportFieldMap`
-
-   The last two are a **worked example only** (for the `Pending` orders
-   file), not verified against a real export — I don't have a sample VistA/
-   FileMan export file to confirm delimiter and column order. Send me one
-   (redact dollar amounts/names if needed, I just need the structure) and
-   I'll fill in accurate `ImportFileTypes`/`ImportFieldMap` rows for F820,
-   F826, AACS, and the rest, instead of you guessing at the layout.
+   - `ImportFileTypes.csv` → `ImportFileTypes` (do this one before importing
+     F820/F20D/F826 data — `ImportLog` has a foreign key to it, so the first
+     import will fail if these rows aren't there yet)
+   - `ImportFieldMap.csv` → `ImportFieldMap` (only actually used by the
+     `Pending` orders example below — unverified, see note there)
 
 ## Day to day use
 
-**Importing a VistA/FileMan text export:**
+**Importing F820 / F20D / F826 downloads:** these are fixed-width printed
+reports, not delimited files, so they go through dedicated parsers rather
+than the generic engine (see `docs/DESIGN.md` → "Real file formats"):
+```
+ImportF820 "C:\path\to\F820 0926.txt"
+ImportF20D "C:\path\to\F20D - T_RBEACCV_073126.txt"
+ImportF826 "C:\path\to\F826 07 31 26.txt"
+```
+The three files in `Sample Files/` at the repo root are good first-run test
+data — the parser was validated against them line-by-line before being
+written (zero parse errors across all of them). Try importing those first
+to confirm your Access setup is wired up correctly before pointing it at a
+fresh download. F820/F826 land in `FiscalSnapshots` (fund status balances)
+and `FiscalTransactions` (the itemized adjustment ledger); F826 lands in
+`FiscalSnapshots` only.
+
+**Importing anything else that's genuinely a delimited file** (e.g. if
+IFCAP ever hands you a comma/caret-separated pending-orders export instead
+of another printed report):
 ```
 ImportFile "Pending", "C:\path\to\export.txt"
 ```
-Add a new report type by adding one row to `ImportFileTypes` and one row
-per column to `ImportFieldMap` — no VBA changes needed. Rejected lines land
-in `ImportRejects` tied to the `ImportLog` row, so a bad file never silently
-drops data.
+This is the generic engine, driven by `ImportFileTypes`/`ImportFieldMap`.
+The `Pending` row in the seed CSVs is an **unverified worked example** — I
+don't have a real sample of this one. If it turns out IFCAP's pending-orders
+export is actually another fixed-width printed report like F820, tell me
+and I'll write it a dedicated parser the same way instead of forcing it
+through here.
+
+Either way, rejected lines land in `ImportRejects` tied to the `ImportLog`
+row, so a bad file never silently drops data.
 
 **Checking for anything that needs attention:**
 ```
@@ -82,10 +103,10 @@ someone calls `ApproveJV`.
 ```
 RunAllReports
 ```
-Dumps `qryFCPStatus`, `qryOverdueOrders`, `qryUnapprovedJVs`, `qryStaleImports`
-to Excel files in `C:\BudgetAppReports\` (change `OutputFolder` at the top of
-`modReports.bas` if you want them somewhere else, e.g. a synced SharePoint
-folder).
+Dumps `qryF820EndingBalances`, `qryF826Status`, `qryLargeAdjustments`,
+`qryOverdueOrders`, `qryUnapprovedJVs`, `qryStaleImports` to Excel files in
+`C:\BudgetAppReports\` (change `OutputFolder` at the top of `modReports.bas`
+if you want them somewhere else, e.g. a synced SharePoint folder).
 
 ## What's still manual
 

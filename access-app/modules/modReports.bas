@@ -14,7 +14,9 @@ Public Sub RunAllReports()
     Dim stamp As String
     stamp = Format(Now(), "yyyy-mm-dd_hhnn")
 
-    ExportQuery "qryFCPStatus", "FCPStatus_" & stamp & ".xlsx"
+    ExportQuery "qryF820EndingBalances", "F820EndingBalances_" & stamp & ".xlsx"
+    ExportQuery "qryF826Status", "F826Status_" & stamp & ".xlsx"
+    ExportQuery "qryLargeAdjustments", "LargeAdjustments_" & stamp & ".xlsx"
     ExportQuery "qryOverdueOrders", "OverdueOrders_" & stamp & ".xlsx"
     ExportQuery "qryUnapprovedJVs", "UnapprovedJVs_" & stamp & ".xlsx"
     ExportQuery "qryStaleImports", "StaleImports_" & stamp & ".xlsx"

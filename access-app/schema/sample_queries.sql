@@ -4,16 +4,34 @@
 -- them in Access, or bind a form/report to them directly.
 -- ============================================================
 
--- qryFCPStatus: wide view of an FCP's fund status, pivoting the
--- FiscalSnapshots fact table back into the old F826-style columns.
--- This is the tradeoff cost of the FiscalSnapshots design mentioned
--- in DESIGN.md -- one PIVOT instead of a plain SELECT *.
+-- qryF820EndingBalances: wide view of each fund/class-code's ending
+-- balance for the reporting period, pivoting the FiscalSnapshots fact
+-- table back into Budget Ceiling / Obligations / Unobligated columns.
+-- Fed by modImportReports.ImportF820 / ImportF20D.
 TRANSFORM Sum(Amount)
-SELECT FCPNo, FY, Fund
+SELECT Station, BFYS, FundCode, ClassCode, ClassCodeName, RunDate
+FROM FiscalSnapshots
+WHERE FileType IN ('F820','F20D') AND BalanceType = 'Ending'
+GROUP BY Station, BFYS, FundCode, ClassCode, ClassCodeName, RunDate
+PIVOT AmountType;
+
+-- qryF826Status: same idea for F826 (Status of Allowance), pivoted into
+-- Budget / Obligations / Available columns per Orgn/Act.
+-- Fed by modImportReports.ImportF826.
+TRANSFORM Sum(Amount)
+SELECT Station, BFYS, FundCode, Program, ClassCode, ClassCodeName, RunDate
 FROM FiscalSnapshots
 WHERE FileType = 'F826'
-GROUP BY FCPNo, FY, Fund
+GROUP BY Station, BFYS, FundCode, Program, ClassCode, ClassCodeName, RunDate
 PIVOT AmountType;
+
+-- qryLargeAdjustments: individual F820/F20D ledger transactions above
+-- $100k, in either direction. Adjust the threshold to taste.
+SELECT FileType, ClassCode, ClassCodeName, DocID, TransDate, Vendor, BOC, CostCenter,
+       CeilingAdjAmount, ObligationAdjAmount
+FROM FiscalTransactions
+WHERE Abs(CeilingAdjAmount) > 100000 OR Abs(ObligationAdjAmount) > 100000
+ORDER BY TransDate DESC;
 
 -- qryStaleImports: file types that haven't been refreshed within
 -- their configured staleness window. Feeds the alerts module.

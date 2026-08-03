@@ -128,25 +128,57 @@ CREATE TABLE ImportRejects (
     CONSTRAINT FK_ImportRejects_Import FOREIGN KEY (ImportID) REFERENCES ImportLog (ImportID)
 );
 
--- ---------- Fiscal data (populated by the import engine) ----------
+-- ---------- Fiscal data (populated by modImportReports.bas) ----------
+-- These two tables replace the original guess at a generic "delimited file"
+-- FiscalSnapshots shape. Real F820/F20D/F826 downloads are fixed-width
+-- printed reports (see docs/DESIGN.md "Real file formats"), not delimited
+-- data, and they split naturally into two kinds of rows: point-in-time
+-- balances (FiscalSnapshots) and individual ledger transactions
+-- (FiscalTransactions).
 
 CREATE TABLE FiscalSnapshots (
     SnapshotID     AUTOINCREMENT,
-    FileType       TEXT(20)  NOT NULL,
-    FCPNo          LONG,
-    FY             TEXT(4),
-    Fund           TEXT(10),
-    DocID          TEXT(30),
-    VendorNumber   TEXT(20),
-    BOC            TEXT(10),
-    CostCenter     TEXT(10),
-    AmountType     TEXT(30)  NOT NULL,    -- 'Ceiling','Obligated','Budget','Unobligated','Uncommitted','Pending','Undistributed'
+    FileType       TEXT(20)  NOT NULL,   -- 'F820', 'F20D', 'F826'
+    Station        TEXT(3),
+    BFYS           TEXT(10),             -- budget FY; multi-year funds print as "25 26"
+    AO             TEXT(4),
+    FundCode       TEXT(10),
+    ClassCode      TEXT(20),             -- F820/F20D "Account Classification Code" / F826 "Orgn/Act"
+    ClassCodeName  TEXT(100),
+    Program        TEXT(10),             -- F826 only
+    BalanceType    TEXT(10),             -- F820/F20D only: 'Beginning' / 'Ending'
+    AmountType     TEXT(30)  NOT NULL,   -- 'BudgetCeiling'/'Obligations'/'UnobligatedBalance' (F820/F20D)
+                                          -- or 'Budget'/'Obligations'/'Available' (F826)
     Amount         CURRENCY,
-    SnapshotDate   DATETIME,
+    RunDate        DATETIME,             -- report's own "Run Date", not when you happened to import it
+    AsOfDate       DATETIME,             -- F820/F20D only
     ImportID       LONG,
     CONSTRAINT PK_FiscalSnapshots PRIMARY KEY (SnapshotID),
     CONSTRAINT FK_FiscalSnapshots_Type FOREIGN KEY (FileType) REFERENCES ImportFileTypes (FileType),
     CONSTRAINT FK_FiscalSnapshots_Import FOREIGN KEY (ImportID) REFERENCES ImportLog (ImportID)
+);
+
+CREATE TABLE FiscalTransactions (
+    TransactionID       AUTOINCREMENT,
+    FileType            TEXT(20) NOT NULL,  -- 'F820' or 'F20D'
+    Station             TEXT(3),
+    BFYS                TEXT(10),
+    AO                  TEXT(4),
+    FundCode            TEXT(10),
+    ClassCode           TEXT(20),
+    ClassCodeName       TEXT(100),
+    DocID               TEXT(20),
+    TransDate           DATETIME,
+    Vendor               TEXT(60),
+    BOC                 TEXT(10),
+    SubBOC               TEXT(10),
+    CostCenter           TEXT(10),
+    CeilingAdjAmount     CURRENCY,
+    ObligationAdjAmount  CURRENCY,
+    RunDate              DATETIME,
+    ImportID             LONG,
+    CONSTRAINT PK_FiscalTransactions PRIMARY KEY (TransactionID),
+    CONSTRAINT FK_FiscalTransactions_Import FOREIGN KEY (ImportID) REFERENCES ImportLog (ImportID)
 );
 
 -- ---------- Purchase card / order tracking ----------

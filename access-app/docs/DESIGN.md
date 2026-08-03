@@ -65,27 +65,79 @@ wasn't doing much.
 `USysApplicationLog` — this is an Access-generated system table (data macro
 error log). Access creates it itself; don't create it manually.
 
+## Real file formats (F820, F20D, F826) — this superseded my first guess
+
+The first version of this doc assumed F820/F826 downloads would be simple
+delimited text (comma/caret-separated columns), and built a generic
+column-position import engine (`modImport.bas`) around that assumption.
+Once real sample files showed up in `Sample Files/`, that assumption turned
+out to be wrong: these are **fixed-width printed reports** (VA FMS report
+IDs `RBEACCVM`/`RBEACCV`/`RBESWSV`), not delimited data. They have repeating
+page headers, multi-line section headers, summary/total rows mixed in with
+detail rows, and — the part that actually breaks naive fixed-column-position
+parsing — right-aligned dollar columns that overflow into the column to
+their left when the number is wide enough (e.g. a `126,692,583.00` value
+eating into where the account-name column would otherwise be).
+
+Because of that overflow behavior, the parser doesn't slice at fixed column
+positions for the dollar amounts. It finds them by pattern (rightmost
+`-?[\d,]+\.\d\d`-shaped tokens on the line) and uses *that* position as the
+right boundary for the text fields to its left, so a wide number never gets
+misread as part of a cost-center code. This was worked out and validated
+against the full sample files in Python first (0 parse errors across all
+16,564 / 3,807 / 1,629 lines) before being ported to VBA in
+`modImportReports.bas`, since I can't run/debug VBA directly from here.
+
+Each report type's structure, briefly:
+
+- **F820 / F20D** ("Monthly/Daily Activity by Account Classification Code"):
+  one block per Account Classification Code, each block containing an FYTD
+  Summary (Beginning/Ending Balance → `FiscalSnapshots`) and an itemized
+  ledger of adjustments (Document ID, date, vendor, BOC, cost center, ceiling/
+  obligation adjustment amounts → `FiscalTransactions`, a new table — this
+  transaction-level detail didn't exist anywhere in the old schema at all).
+  F820 is the monthly version, F20D is the daily version; same layout,
+  different period.
+- **F826** ("Status of Allowance"): one block per Fund/Program, each
+  containing rows per Orgn/Act (essentially the same concept as F820's
+  Account Classification Code, different report's name for it) with Budget/
+  Obligations/Available amounts → `FiscalSnapshots`.
+
+If a future download doesn't match — different RSD report ID, a column
+that's missing, wider special-case dollar amounts — the bad lines land in
+`ImportRejects` with the raw text and reason instead of silently mis-parsing.
+Send me those and the parser gets adjusted.
+
+One thing I couldn't verify from here: `CDate()` on `MM/DD/YY` values
+assumes the machine running Access is set to US date format. That should be
+true for a VA desktop, but if dates start importing as, e.g., day and month
+swapped, that's the first thing to check.
+
 ## `FiscalSnapshots`: the one deliberately debatable choice
 
-Instead of one rigid table per VistA report (F820, F826, AACS, SALT, ALLW,
-IFCAP...), there's one fact table:
+Instead of one rigid table per report (F820, F826, and whatever else shows
+up later — AACS, SALT, ALLW...), there's one fact table:
 
 ```
-FiscalSnapshots(SnapshotID, FileType, FCPNo, FY, Fund, DocID, VendorNumber,
-                 BOC, CostCenter, AmountType, Amount, SnapshotDate, ImportID)
+FiscalSnapshots(SnapshotID, FileType, Station, BFYS, AO, FundCode, ClassCode,
+                 ClassCodeName, Program, BalanceType, AmountType, Amount,
+                 RunDate, AsOfDate, ImportID)
 ```
 
-`FileType` says which report it came from (`F820`, `F826`, `AACS`, ...) and
-`AmountType` says what the dollar figure means (`Ceiling`, `Obligated`,
-`Budget`, `Unobligated`, `Uncommitted`, `Pending`, ...). This trades some
-type safety for the ability to import a *new* VistA report type by adding a
-row to `ImportFileTypes`/`ImportFieldMap` instead of writing a new table +
-new VBA module every time. The cost: reports that need a "wide" view (one
-row per FCP with Ceiling/Obligated/Available as separate columns) need a
-`PIVOT` or crosstab query instead of a plain `SELECT *`. Example is in
-`schema/03_sample_queries.sql`. If this turns out to be the wrong tradeoff
-in practice, the old one-table-per-report style is a legitimate alternative
-— easy to revisit once we see real import files.
+`FileType` says which report it came from (`F820`, `F20D`, `F826`, ...) and
+`AmountType` says what the dollar figure means (`BudgetCeiling`,
+`Obligations`, `UnobligatedBalance` for F820/F20D; `Budget`, `Obligations`,
+`Available` for F826). This trades some type safety for the ability to
+import a *new* report type by adding rows to `ImportFileTypes` and writing
+one new parser sub in `modImportReports.bas` — no schema change needed. The
+cost: reports that need a "wide" view (one row per class code with Ceiling/
+Obligated/Available as separate columns) need a `PIVOT` query instead of a
+plain `SELECT *`. See `qryF820EndingBalances` / `qryF826Status` in
+`schema/sample_queries.sql`. If this turns out to be the wrong tradeoff in
+practice — e.g. if a future report doesn't fit the "dimensions + one amount
+per row" shape at all — a dedicated table for that report type is a fine
+fallback, same as `FiscalTransactions` got one instead of being forced into
+this fact table.
 
 ## What still has to be built by hand in Access
 

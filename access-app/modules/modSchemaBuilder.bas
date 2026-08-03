@@ -65,7 +65,7 @@ End Function
 
 ' The DDL below mirrors schema/schema.sql -- keep them in sync.
 Private Function TableDDL() As String()
-    Dim s(0 To 20) As String
+    Dim s(0 To 30) As String
     Dim n As Long
     n = 0
 
@@ -133,12 +133,20 @@ Private Function TableDDL() As String()
         "CONSTRAINT FK_ImportRejects_Import FOREIGN KEY (ImportID) REFERENCES ImportLog (ImportID))" : n = n + 1
 
     s(n) = "CREATE TABLE FiscalSnapshots (" & _
-        "SnapshotID AUTOINCREMENT, FileType TEXT(20) NOT NULL, FCPNo LONG, FY TEXT(4), Fund TEXT(10), " & _
-        "DocID TEXT(30), VendorNumber TEXT(20), BOC TEXT(10), CostCenter TEXT(10), " & _
-        "AmountType TEXT(30) NOT NULL, Amount CURRENCY, SnapshotDate DATETIME, ImportID LONG, " & _
+        "SnapshotID AUTOINCREMENT, FileType TEXT(20) NOT NULL, Station TEXT(3), BFYS TEXT(10), AO TEXT(4), " & _
+        "FundCode TEXT(10), ClassCode TEXT(20), ClassCodeName TEXT(100), Program TEXT(10), BalanceType TEXT(10), " & _
+        "AmountType TEXT(30) NOT NULL, Amount CURRENCY, RunDate DATETIME, AsOfDate DATETIME, ImportID LONG, " & _
         "CONSTRAINT PK_FiscalSnapshots PRIMARY KEY (SnapshotID), " & _
         "CONSTRAINT FK_FiscalSnapshots_Type FOREIGN KEY (FileType) REFERENCES ImportFileTypes (FileType), " & _
         "CONSTRAINT FK_FiscalSnapshots_Import FOREIGN KEY (ImportID) REFERENCES ImportLog (ImportID))" : n = n + 1
+
+    s(n) = "CREATE TABLE FiscalTransactions (" & _
+        "TransactionID AUTOINCREMENT, FileType TEXT(20) NOT NULL, Station TEXT(3), BFYS TEXT(10), AO TEXT(4), " & _
+        "FundCode TEXT(10), ClassCode TEXT(20), ClassCodeName TEXT(100), DocID TEXT(20), TransDate DATETIME, " & _
+        "Vendor TEXT(60), BOC TEXT(10), SubBOC TEXT(10), CostCenter TEXT(10), " & _
+        "CeilingAdjAmount CURRENCY, ObligationAdjAmount CURRENCY, RunDate DATETIME, ImportID LONG, " & _
+        "CONSTRAINT PK_FiscalTransactions PRIMARY KEY (TransactionID), " & _
+        "CONSTRAINT FK_FiscalTransactions_Import FOREIGN KEY (ImportID) REFERENCES ImportLog (ImportID))" : n = n + 1
 
     s(n) = "CREATE TABLE PendingOrders (" & _
         "TransactionNumber TEXT(30) NOT NULL, RecordType TEXT(10) NOT NULL, FCPNo LONG, FY TEXT(4), " & _
@@ -199,10 +207,25 @@ Private Function TableDDL() As String()
 End Function
 
 Public Sub CreateSavedQueries()
-    DropQueryIfExists "qryFCPStatus"
-    CurrentDb.CreateQueryDef "qryFCPStatus", _
-        "TRANSFORM Sum(Amount) SELECT FCPNo, FY, Fund FROM FiscalSnapshots " & _
-        "WHERE FileType = 'F826' GROUP BY FCPNo, FY, Fund PIVOT AmountType;"
+    DropQueryIfExists "qryF820EndingBalances"
+    CurrentDb.CreateQueryDef "qryF820EndingBalances", _
+        "TRANSFORM Sum(Amount) SELECT Station, BFYS, FundCode, ClassCode, ClassCodeName, RunDate " & _
+        "FROM FiscalSnapshots WHERE FileType IN ('F820','F20D') AND BalanceType = 'Ending' " & _
+        "GROUP BY Station, BFYS, FundCode, ClassCode, ClassCodeName, RunDate PIVOT AmountType;"
+
+    DropQueryIfExists "qryF826Status"
+    CurrentDb.CreateQueryDef "qryF826Status", _
+        "TRANSFORM Sum(Amount) SELECT Station, BFYS, FundCode, Program, ClassCode, ClassCodeName, RunDate " & _
+        "FROM FiscalSnapshots WHERE FileType = 'F826' " & _
+        "GROUP BY Station, BFYS, FundCode, Program, ClassCode, ClassCodeName, RunDate PIVOT AmountType;"
+
+    DropQueryIfExists "qryLargeAdjustments"
+    CurrentDb.CreateQueryDef "qryLargeAdjustments", _
+        "SELECT FileType, ClassCode, ClassCodeName, DocID, TransDate, Vendor, BOC, CostCenter, " & _
+        "CeilingAdjAmount, ObligationAdjAmount " & _
+        "FROM FiscalTransactions " & _
+        "WHERE Abs(CeilingAdjAmount) > 100000 OR Abs(ObligationAdjAmount) > 100000 " & _
+        "ORDER BY TransDate DESC;"
 
     DropQueryIfExists "qryStaleImports"
     CurrentDb.CreateQueryDef "qryStaleImports", _
