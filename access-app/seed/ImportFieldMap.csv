@@ -1,0 +1,8 @@
+FileType,ColumnIndex,TargetField,DataType
+Pending,1,TransactionNumber,TEXT
+Pending,2,FCPNo,LONG
+Pending,3,PO,TEXT
+Pending,4,VendorNumber,TEXT
+Pending,5,ApprovalDate,DATE
+Pending,6,Amount,CURRENCY
+Pending,7,StatusCode,TEXT
