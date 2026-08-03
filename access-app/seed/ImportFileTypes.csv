@@ -1,0 +1,2 @@
+FileType,DisplayName,Delimiter,TargetTable,StaleAfterDays
+Pending,IFCAP Pending Orders,",",PendingOrders,7
